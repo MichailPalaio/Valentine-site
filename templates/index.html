@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valentine's Day</title>
+    <script src="https://cdn.jsdelivr.net/npm/confetti-js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nosifer&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="static/favicon.ico">
+    <style>
+        body {
+            background-color: #FFC0CB; /* Initial pink background */
+            text-align: center;
+            font-family: Arial, sans-serif;
+            position: relative;
+            overflow: hidden;
+            transition: background-color 0.5s;
+        }
+        .container {
+            margin-top: 10%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 80vh;
+        }
+        .gif img {
+            width: 300px;
+        }
+        .buttons {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .buttons button, .start-button {
+            font-size: 20px;
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+        .buttons button:hover, .start-button:hover {
+            transform: scale(1.1);
+        }
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .creepy-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .creepy-element, .creepy-icon {
+            font-family: 'Nosifer', cursive;
+            position: absolute;
+            font-size: 28px;
+            color: red;
+            font-weight: bold;
+            opacity: 0;
+            animation: fadeInOut 3s infinite;
+        }
+        .creepy-icon {
+            width: 200px;
+            height: 200px;
+        }
+        .creepy-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Ensures the image fills the container */
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(20px); }
+            50% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+
+        /* Styling for the overlay */
+        #start-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #FFC0CB; /* Fully opaque pink background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        /* Styling for the start button */
+        .start-button {
+            background-color: #FF69B4; /* Hot pink */
+            color: white;
+            font-size: 24px;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: none;
+            transition: 0.3s;
+        }
+        .start-button:hover {
+            background-color: #FF1493; /* Deeper pink on hover */
+        }
+    </style>
+</head>
+<body>
+    <div id="start-overlay">
+        <button class="start-button" onclick="startExperience()">Click me!</button>
+    </div>
+
+    <audio id="background-music" loop>
+        <source src="static/music/default_music.mp3" type="audio/mp3">
+    </audio>
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <div class="container">
+        <div class="gif">
+            <img id="valentine-gif" src="static/gifs/default.gif" alt="Default image failed to load properly">
+        </div>
+        <h1 id="question">Will you be my Valentine?</h1>
+        <div class="buttons">
+            <button id="yes-btn" onclick="sayYes()" style="background-color: #90EE90;">Yes</button>
+            <button id="no-btn" onclick="sayNo()" style="background-color: #FF6347;">No</button>
+        </div>
+    </div>
+    <div class="creepy-container" id="creepy-container"></div>
+    <script>
+        let isFirstClick = true; 
+        let hasCreepyGifChanged = false; 
+        let audioInitialized = false;
+        let creepyInterval;
+        const existingPositions = []; // Track positions of existing creepy elements
+
+        function startExperience() {
+            document.getElementById("start-overlay").style.display = "none";
+            const music = document.getElementById("background-music");
+            music.play().catch(error => console.log("Audio play failed:", error));
+            audioInitialized = true;
+        }
+
+        function changeMusic(src) {
+            let music = document.getElementById("background-music");
+            music.src = src;
+            music.play();
+        }
+
+        function sayYes() {
+            document.body.style.backgroundColor = "#FFC0CB";
+            document.getElementById("question").style.color = "#000000";
+            document.getElementById("valentine-gif").src = "static/gifs/happy.gif";
+            document.getElementById("question").innerText = "Yay!!!";
+            document.getElementById("yes-btn").style.display = "none";
+            document.getElementById("no-btn").style.display = "none";
+            changeMusic("static/music/happy_music.mp3");
+            launchConfetti();
+            clearInterval(creepyInterval);
+            document.getElementById("creepy-container").innerHTML = "";
+            existingPositions.length = 0; // Clear tracked positions
+        }
+
+        function sayNo() {
+            if (isFirstClick) {
+                document.body.style.backgroundColor = "#000000";
+                document.getElementById("question").style.color = "#FFFFFF";
+                isFirstClick = false;
+                changeMusic("static/music/creepy_music.mp3");
+                creepyInterval = setInterval(addCreepyElements, 2000);
+            }
+
+            if (!hasCreepyGifChanged) {
+                document.getElementById("valentine-gif").src = "static/gifs/creepy.gif";
+                hasCreepyGifChanged = true;
+            }
+            document.getElementById("question").innerText = "There is no escape";
+            moveNoButton();
+        }
+
+        function moveNoButton() {
+            const btn = document.getElementById("no-btn");
+            const container = document.querySelector(".container");
+
+            btn.style.position = "absolute";
+
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const btnWidth = btn.offsetWidth;
+            const btnHeight = btn.offsetHeight;
+            const containerRect = container.getBoundingClientRect();
+            const containerLeft = containerRect.left;
+            const containerTop = containerRect.top;
+            const maxX = viewportWidth - btnWidth - containerLeft;
+            const maxY = viewportHeight - btnHeight - containerTop;
+            const randomX = Math.random() * maxX;
+            const randomY = Math.random() * maxY;
+            btn.style.left = `${Math.max(0, Math.min(randomX, maxX))}px`;
+            btn.style.top = `${Math.max(0, Math.min(randomY, maxY))}px`;
+            btn.style.transition = "left 0.5s, top 0.5s";
+        }
+
+        function addCreepyElements() {
+            const phrases = ["I'm watching you", "Don't say no", "You can't run", "Too late now", "You are judged", "Don't turn around", "Why?", "Everything is pointless", "End the suffering", "Watch your back"];
+            const icons = ["static/icons/scaryface1.png", "static/icons/scaryface2.png", "static/icons/eyes1.png", "static/icons/eyes2.png", "static/icons/eyes3.png"];
+            const container = document.getElementById("creepy-container");
+            const choice = Math.random();
+
+            // Adjust probabilities: 61% for text, 39% for icons
+            const elem = document.createElement("div");
+            let isText = choice < 0.61;
+
+            // Generate a unique position
+            let x, y;
+            let attempts = 0;
+            do {
+                x = Math.random() * (window.innerWidth - 100); // Leave some margin
+                y = Math.random() * (window.innerHeight - 100); // Leave some margin
+                attempts++;
+            } while (isOverlapping(x, y) && attempts < 100); // Prevent infinite loops
+
+            if (attempts >= 100) {
+                console.log("Failed to find a unique position after 100 attempts.");
+                return; // Give up if no valid position is found
+            }
+
+            if (isText) {
+                elem.className = "creepy-element";
+                elem.innerText = phrases[Math.floor(Math.random() * phrases.length)];
+            } else {
+                elem.className = "creepy-icon";
+                const img = document.createElement("img");
+                img.src = icons[Math.floor(Math.random() * icons.length)];
+                img.className = "creepy-icon";
+                elem.appendChild(img);
+            }
+
+            elem.style.left = `${x}px`;
+            elem.style.top = `${y}px`;
+            container.appendChild(elem);
+            existingPositions.push({ x, y }); // Track the new position
+
+            console.log(`Added element at (${x}, ${y}). Existing positions:`, existingPositions);
+
+            setTimeout(() => {
+                elem.remove();
+                // Remove the position from tracking when the element is removed
+                const index = existingPositions.findIndex(pos => pos.x === x && pos.y === y);
+                if (index !== -1) {
+                    existingPositions.splice(index, 1);
+                    console.log(`Removed element at (${x}, ${y}). Remaining positions:`, existingPositions);
+                }
+            }, 5000);
+        }
+
+        function isOverlapping(x, y) {
+            // Check if the new position overlaps with any existing positions
+            const padding = 100; // Minimum distance between elements
+            return existingPositions.some(pos => {
+                const distance = Math.sqrt(Math.pow(pos.x - x, 2) + Math.pow(pos.y - y, 2));
+                return distance < padding;
+            });
+        }
+
+        function launchConfetti() {
+            const confettiSettings = { target: 'confetti-canvas' };
+            const confetti = new ConfettiGenerator(confettiSettings);
+            confetti.render();
+        }
+    </script>
+</body>
+</html>
