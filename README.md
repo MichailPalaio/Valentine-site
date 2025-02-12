@@ -4,7 +4,7 @@
 
 A fun and interactive Valentine's Day website built with **HTML**, **CSS**, and **JavaScript**. The site features a playful "Will you be my Valentine?" prompt with interactive buttons, animations, and sound effects.
 Experience the love here:
-[https://michailpalaio.github.io/Valentine-site/](https://michailpalaio.github.io/Valentine-site/).
+[https://michailpalaio.github.io/Valentine-site/](https://michailpalaio.github.io/Valentine-site/)
 
 ---
 
